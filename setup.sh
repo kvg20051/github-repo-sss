@@ -11,6 +11,71 @@ LOG_FILE="/var/log/system_setup.log"
 PING_TEST_IP="8.8.8.8"
 PING_TEST_DOMAIN="example.com"
 
+# Package Configuration
+# System monitoring packages
+SYSTEM_MONITORING_PACKAGES=(
+    "htop=3.*"
+    "atop=2.*"
+    "sysstat=12.*"
+    "smartmontools=7.*"
+    "ncdu=1.*"
+)
+
+# Network tools packages
+NETWORK_TOOLS_PACKAGES=(
+    "net-tools"
+    "nmap"
+    "mtr"
+    "inetutils-ping"
+    "rsync"
+    "lftp"
+    "w3m"
+    "lynx"
+)
+
+# Text/terminal tools packages
+TEXT_TOOLS_PACKAGES=(
+    "vim"
+    "nano"
+    "tmux"
+    "tree"
+    "less"
+)
+
+# Disk/FS tools packages
+DISK_TOOLS_PACKAGES=(
+    "lvm2"
+    "xfsprogs"
+)
+
+# Security/network packages
+SECURITY_PACKAGES=(
+    "wireguard-tools"
+    "openssh-server"
+)
+
+# Misc utilities packages
+MISC_UTILITIES_PACKAGES=(
+    "unzip"
+    "jq"
+    "plocate"
+    "neofetch"
+    "mc"
+    "git"
+    "fuse"
+    "libfuse2"
+    "procps"
+    "alpine"
+    "curl"
+    "mdadm"
+    "xclip"
+)
+
+# GUI tools packages (optional)
+GUI_TOOLS_PACKAGES=(
+    "flameshot"
+)
+
 # Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -81,23 +146,17 @@ fi
 # Install essential packages with error handling and version pinning
 echo -e "${CYAN}Installing system utilities...${NC}"
 install_packages() {
-    local packages=(
-        # System monitoring
-        "htop=3.*" "atop=2.*" "sysstat=12.*" "smartmontools=7.*" "ncdu=1.*"
-        # Network tools
-        "net-tools" "nmap" "mtr" "inetutils-ping" "rsync" "lftp" "w3m" "lynx"
-        # Text/terminal tools
-        "vim" "nano" "tmux" "tree" "less"
-        # Disk/FS tools
-        "lvm2" "xfsprogs"
-        # Security/network
-        "wireguard-tools" "openssh-server"
-        # Misc utilities
-        "unzip" "jq" "plocate" "neofetch" "mc" "git" "fuse" "libfuse2" "procps" "alpine" "curl" "mdadm" "xclip"
+    local all_packages=(
+        "${SYSTEM_MONITORING_PACKAGES[@]}"
+        "${NETWORK_TOOLS_PACKAGES[@]}"
+        "${TEXT_TOOLS_PACKAGES[@]}"
+        "${DISK_TOOLS_PACKAGES[@]}"
+        "${SECURITY_PACKAGES[@]}"
+        "${MISC_UTILITIES_PACKAGES[@]}"
     )
 
     local failed_packages=()
-    for pkg in "${packages[@]}"; do
+    for pkg in "${all_packages[@]}"; do
         pkg_name=$(echo "$pkg" | cut -d'=' -f1)
         if ! dpkg -l | grep -q "^ii  $pkg_name "; then
             echo -e "${BLUE}Installing $pkg...${NC}"
@@ -121,8 +180,23 @@ install_packages
 # Install GUI tools only if X11 is detected and enabled
 if [ "$INSTALL_GUI_TOOLS" = true ] && [ -n "${DISPLAY:-}" ]; then
     echo -e "${CYAN}Installing GUI tools...${NC}"
-    if ! DEBIAN_FRONTEND=noninteractive apt install -y flameshot; then
-        echo -e "${RED}Failed to install GUI tools${NC}"
+    local failed_gui_packages=()
+    for pkg in "${GUI_TOOLS_PACKAGES[@]}"; do
+        pkg_name=$(echo "$pkg" | cut -d'=' -f1)
+        if ! dpkg -l | grep -q "^ii  $pkg_name "; then
+            echo -e "${BLUE}Installing GUI tool: $pkg...${NC}"
+            if ! DEBIAN_FRONTEND=noninteractive apt install -y "$pkg"; then
+                failed_gui_packages+=("$pkg")
+                echo -e "${RED}Failed to install GUI tool: $pkg${NC}"
+            fi
+        else
+            echo -e "${YELLOW}GUI tool $pkg_name is already installed, skipping...${NC}"
+        fi
+    done
+    
+    if [ ${#failed_gui_packages[@]} -gt 0 ]; then
+        echo -e "${RED}Failed to install the following GUI tools:${NC}"
+        printf '%s\n' "${failed_gui_packages[@]}"
     fi
 else
     echo -e "${YELLOW}Skipping GUI tools installation${NC}"
