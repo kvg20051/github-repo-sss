@@ -2,7 +2,7 @@
 set -euo pipefail  # Fail on errors and undefined variables
 
 # Configuration
-ENABLE_PASSWORDLESS_SUDO=false
+ENABLE_PASSWORDLESS_SUDO=true
 INSTALL_GUI_TOOLS=false
 GENERATE_SSH_KEYS=true
 MIN_SPACE_GB=5
