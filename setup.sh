@@ -212,19 +212,33 @@ PS1='"'"'\[\033[01;32m\][\t]\[\033[0m\] \[\033[01;35m\][\u@\h]\[\033[0m\] \[\033
 export PS1
 
 # System aliases
+alias alert='"'"'notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '"'"'"'"'"'"'"'"'s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'"'"'"'"'"'"'"'"')"'"'"'
+alias egrep='"'"'egrep --color=auto'"'"'
+alias fgrep='"'"'fgrep --color=auto'"'"'
+alias grep='"'"'grep --color=auto'"'"'
+alias k='"'"'kubectl'"'"'
+alias ku='"'"'aws eks update-kubeconfig --region $(terraform output -raw region) --name $(terraform output -raw cluster_name)'"'"'
+alias l='"'"'ls -la --group-directories-first'"'"'
+alias la='"'"'ls -A'"'"'
+alias list='"'"'aws ec2 describe-instances --region us-east-1 --query "Reservations[*].Instances[*].{Instance:InstanceId,Name:Tags[?Key=='"'"'"'"'"'"'"'"'Name'"'"'"'"'"'"'"'"']|[0].Value,PrivateIP:PrivateIpAddress,PublicIP:PublicIpAddress,PublicDNS:PublicDnsName,Status:State.Name}" --output table'"'"'
+alias list2='"'"'aws ec2 describe-instances --region us-east-1 --query "Reservations[*].Instances[*].{Instance:InstanceId,PrivateIP:PrivateIpAddress,PublicIP:PublicIpAddress,Status:State.Name,Name:Tags[?Key==Name]|[0].Value}" --output table'"'"'
+alias ll='"'"'ls -alF'"'"'
+alias ls='"'"'ls --color=auto -CF'"'"'
 alias m='"'"'sudo monit summary'"'"'
 alias p='"'"'ping -c 3 77.88.44.242'"'"'  # Limit to 3 pings by default
 alias pine='"'"'alpine'"'"'
-alias u='"'"'sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y'"'"'
-alias z='"'"'ping -c 3 ya.ru'"'"'
-
-# SSH aliases
-alias t='"'"'ssh -o StrictHostKeyChecking=no 55ve.l.time4vps.cloud'"'"'
-alias tt='"'"'ssh wg_gw'"'"'
-alias y='"'"'ssh student@std-ext-010-33.praktikum-services.tech'"'"'
-
-# Script aliases
 alias s='"'"'sudo ./_bin/script_v2.sh --host'"'"'
+alias start='"'"'aws ec2 start-instances --instance-ids $(aws ec2 describe-instances --filters Name=instance-state-name,Values=stopped --query "Reservations[*].Instances[*].InstanceId" --output text)'"'"'
+alias stop='"'"'aws ec2 stop-instances --instance-ids $(aws ec2 describe-instances --filters Name=instance-state-name,Values=running --query "Reservations[*].Instances[*].InstanceId" --output text)'"'"'
+alias t='"'"'ssh 55ve.l.time4vps.cloud'"'"'
+alias ta='"'"'terraform apply -auto-approve'"'"'
+alias td='"'"'terraform destroy -auto-approve'"'"'
+alias ti='"'"'terraform init'"'"'
+alias tp='"'"'terraform plan'"'"'
+alias tv='"'"'terraform validate'"'"'
+alias u='"'"'sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y'"'"'
+alias y='"'"'ssh student@std-ext-010-33.praktikum-services.tech'"'"'
+alias z='"'"'ping -c 3 ya.ru'"'"'
 '
 
 # Check if content already exists
