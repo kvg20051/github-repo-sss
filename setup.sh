@@ -69,6 +69,8 @@ MISC_UTILITIES_PACKAGES=(
     "curl"
     "mdadm"
     "xclip"
+    "wrk"
+    "ab"
 )
 
 # GUI tools packages (optional)
