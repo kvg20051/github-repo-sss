@@ -307,14 +307,16 @@ alias s='"'"'sudo ./_bin/script_v2.sh --host'"'"'
 alias start='"'"'aws ec2 start-instances --instance-ids $(aws ec2 describe-instances --filters Name=instance-state-name,Values=stopped --query "Reservations[*].Instances[*].InstanceId" --output text)'"'"'
 alias stop='"'"'aws ec2 stop-instances --instance-ids $(aws ec2 describe-instances --filters Name=instance-state-name,Values=running --query "Reservations[*].Instances[*].InstanceId" --output text)'"'"'
 alias t='"'"'ssh 55ve.l.time4vps.cloud'"'"'
+# ====== terraform aliases =============================
 alias ta='"'"'terraform apply -auto-approve'"'"'
 alias td='"'"'terraform destroy -auto-approve'"'"'
 alias ti='"'"'terraform init'"'"'
 alias tp='"'"'terraform plan'"'"'
 alias tv='"'"'terraform validate'"'"'
+#==========================================================
 alias u='"'"'sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y'"'"'
 alias y='"'"'ssh student@std-ext-010-33.praktikum-services.tech'"'"'
-alias z='"'"'ping -c 3 ya.ru'"'"'
+alias pp='"'"'ping -c 3 ya.ru'"'"'
 '
 
 # Check if content already exists
