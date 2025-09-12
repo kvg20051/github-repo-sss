@@ -31,6 +31,7 @@ NETWORK_TOOLS_PACKAGES=(
     "lftp"
     "w3m"
     "lynx"
+    "btop"
 )
 
 # Text/terminal tools packages
@@ -70,7 +71,6 @@ MISC_UTILITIES_PACKAGES=(
     "mdadm"
     "xclip"
     "wrk"
-    "ab"
 )
 
 # GUI tools packages (optional)
@@ -328,13 +328,13 @@ else
 fi
 
 # Disable lightdm only if it exists
-if systemctl list-unit-files | grep -q lightdm.service; then
-    echo -e "${CYAN}Disabling lightdm...${NC}"
-    systemctl stop lightdm.service
-    systemctl disable lightdm.service
-else
-    echo -e "${YELLOW}lightdm not found, skipping${NC}"
-fi
+#if systemctl list-unit-files | grep -q lightdm.service; then
+#    echo -e "${CYAN}Disabling lightdm...${NC}"
+#    systemctl stop lightdm.service
+#    systemctl disable lightdm.service
+#else
+#    echo -e "${YELLOW}lightdm not found, skipping${NC}"
+#fi
 
 # Apply changes to current session if possible
 if [ -n "${SUDO_USER:-}" ] && [ "$(whoami)" = "$SUDO_USER" ]; then
