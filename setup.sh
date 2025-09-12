@@ -71,6 +71,8 @@ MISC_UTILITIES_PACKAGES=(
     "mdadm"
     "xclip"
     "wrk"
+    "vlc"
+    "monit"
 )
 
 # GUI tools packages (optional)
