@@ -47,6 +47,7 @@ TEXT_TOOLS_PACKAGES=(
 DISK_TOOLS_PACKAGES=(
     "lvm2"
     "xfsprogs"
+    "gparted"
 )
 
 # Security/network packages
