@@ -1,0 +1,164 @@
+set daemon  240             # check services at 120 seconds intervals
+set log /var/log/monit.log
+set idfile /var/lib/monit/id
+set statefile /var/lib/monit/state
+set eventqueue
+     basedir /var/lib/monit/events  # set the base directory where events will be stored
+     slots 100                      # optionally limit the queue size
+#
+set httpd port 2812
+
+    allow localhost        # allow localhost to connect to the server and
+    allow 192.168.25.0/24
+    allow 192.168.27.0/24
+    allow 192.168.29.0/24
+    allow 188.32.102.0/24
+    allow 185.9.77.0/24
+    allow 95.31.179.0/24
+    allow 10.229.0.0/16
+#    allow 10.0.0.0/8
+#    allow 0.0.0.0/0
+    allow 79.98.30.0/24
+    allow admin:monit
+include /etc/monit/conf.d/*
+include /etc/monit/conf-enabled/*
+
+check process sshd with pidfile /var/run/sshd.pid
+    start program = "/usr/sbin/service ssh start"
+    stop program = "/usr/sbin/service ssh stop"
+    if failed port 22 protocol ssh then restart
+    if 5 restarts within 5 cycles then timeout
+
+########################################################################################3
+#check host [gen10]_10.66.66.27 with address 10.66.66.27
+#   if failed icmp type echo count 5 with timeout 15 seconds then alert
+#   if failed icmp type echo count 5 with timeout 15 seconds then exec "/usr/local/bin/monit-telegram-alert.sh '❌ ALERT[t4vps]: Host gen10 - 10.66.66.27 is unreachable via ping'"
+#   if succeeded icmp type echo then exec "/usr/local/bin/monit-telegram-alert.sh '✅ RECOVERY[t4vps]: Host gen10 - 10.66.66.27 is reachable again'"
+#########################################################################################
+
+check host [t4vps]_10.66.66.1[t4] with address 10.66.66.1
+    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host 10.66.66.5_WinClient with address 10.66.66.5
+#    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host windows_home_wg_vpn_5 with address 10.66.66.5
+#    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host kvg_android_wg_vpn_6 with address 10.66.66.6
+#    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host win_office_wg_vpn_7 with address 10.66.66.7
+#    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host [gen10]_10.66.66.27_[gen10] with address 10.66.66.27
+#    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host win_dacha with address 10.66.66.9
+#    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host [x390]_10.66.66.22[x390] with address 10.66.66.22
+#    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host [mintoffice]_10.66.66.22[mo] with address 10.66.66.2
+#    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [T4VPS]_10.6.6.6 with address 10.6.6.6
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [gen10]_10.6.6.1 with address 10.6.6.1
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [gen20]_10.6.6.2 with address 10.6.6.2
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [gen30]_10.6.6.8 with address 10.6.6.8
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+
+check host [T4VPS]_10.123.123.6 with address 10.123.123.6
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host [t4]_10.5.5.4 with address 10.5.5.1
+#   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [gen10]_10.123.123.1 with address 10.123.123.1
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [gen20]_10.123.123.2 with address 10.123.123.2
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [gen30]_10.123.123.8 with address 10.123.123.8
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host [T4VPS]_10.123.123.6 with address 10.123.123.6
+#   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host [x390]_10.123.123.3 with address 10.123.123.3
+#   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host [mint2]_10.123.123.5 with address 10.123.123.5
+#   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host [mint]_10.123.123.7 with address 10.123.123.7
+#   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-61] with address std-ext-010-61.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-62] with address std-ext-010-62.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-63] with address std-ext-010-63.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-64] with address std-ext-010-64.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-65] with address std-ext-010-65.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-66] with address std-ext-010-66.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-67] with address std-ext-010-67.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-68] with address std-ext-010-68.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-69] with address std-ext-010-69.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-70] with address std-ext-010-70.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-71] with address std-ext-010-71.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [std-ext-010-99] with address std-ext-010-99.praktikum-services.tech
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+
+#check host _ya.pr.std-ext-010-33_ with address std-ext-010-33.praktikum-services.tech
+#    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+#check host ya.pr.std-ext-010-61 with address std-ext-010-61.praktikum-services.tech
+#    if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+###############################################################################3
+check host R27_kvg2005rtac65p.asuscomm.com with address 95.31.179.122
+    if failed icmp type echo count 5 with timeout 15 seconds then alert
+    if failed icmp type echo count 5 with timeout 15 seconds then exec "/usr/local/bin/monit-telegram-alert.sh '❌ ALERT[t4vps]: Router R27 kvg2005rtac65p.asuscomm.com 95.31.179.122 is down'"
+    if succeeded icmp type echo then exec "/usr/local/bin/monit-telegram-alert.sh '✅ RECOVERY[t4vps]: Router R27 kvg2005rtac65p.asuscomm.com 95.31.179.122 is reachable again'"
+
+check host R25_kvg2005RTAC85P.asuscomm.com  with address 188.32.102.119
+    if failed icmp type echo count 5 with timeout 15 seconds then alert
+    if failed icmp type echo count 5 with timeout 15 seconds then exec "/usr/local/bin/monit-telegram-alert.sh '❌ ALERT[t4vps]: Router R25 kvg2005RTAC85P.asuscomm.com 188.32.102.119 is down'"
+    if succeeded icmp type echo then exec "/usr/local/bin/monit-telegram-alert.sh '✅ RECOVERY[t4vps]: Router R25 kvg2005RTAC85P.asuscomm.com 188.32.102.119 is reachable again'"
+
+check host R29_kvg2005RTAX86S.asuscomm.com with address 185.9.77.170
+    if failed icmp type echo count 5 with timeout 15 seconds then alert
+    if failed icmp type echo count 5 with timeout 15 seconds then exec "/usr/local/bin/monit-telegram-alert.sh '❌ ALERT[t4vps]: Router R29 kvg2005RTAX86S.asuscomm.com 185.9.77.170 is down'"
+    if succeeded icmp type echo then exec "/usr/local/bin/monit-telegram-alert.sh '✅ RECOVERY[t4vps]: Router R29 kvg2005RTAX86S.asuscomm.com 185.9.77.170 is reachable again'"
+

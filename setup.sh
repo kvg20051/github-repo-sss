@@ -48,6 +48,7 @@ DISK_TOOLS_PACKAGES=(
     "lvm2"
     "xfsprogs"
     "gparted"
+    "hdparm"
 )
 
 # Security/network packages
@@ -427,6 +428,55 @@ else
     echo -e "${YELLOW}Skipping installation of host_info_2.0_linux_amd64.sh${NC}"
 fi
 
+# Install monitrc configuration
+echo -e "${CYAN}Installing monitrc configuration...${NC}"
+MONITRC_SOURCE="$SCRIPT_DIR/monitrc"
+MONITRC_TARGET="/etc/monit/monitrc"
+if [ -f "$MONITRC_SOURCE" ]; then
+    # Create /etc/monit directory if it doesn't exist
+    mkdir -p /etc/monit
+    # Backup existing monitrc if it exists
+    if [ -f "$MONITRC_TARGET" ]; then
+        cp "$MONITRC_TARGET" "$MONITRC_TARGET.backup.$(date +%Y%m%d_%H%M%S)"
+        echo -e "${YELLOW}Backed up existing monitrc configuration${NC}"
+    fi
+    # Copy new monitrc
+    cp "$MONITRC_SOURCE" "$MONITRC_TARGET"
+    chmod 600 "$MONITRC_TARGET"
+    echo -e "${GREEN}Successfully installed monitrc to $MONITRC_TARGET${NC}"
+    
+    # Validate monitrc configuration
+    if command -v monit >/dev/null 2>&1; then
+        echo -e "${BLUE}Validating monitrc configuration...${NC}"
+        if monit -t; then
+            echo -e "${GREEN}Monitrc configuration is valid${NC}"
+            # Restart monit service if it's running
+            if systemctl is-active --quiet monit; then
+                echo -e "${BLUE}Restarting monit service...${NC}"
+                if systemctl restart monit; then
+                    echo -e "${GREEN}Monit service restarted successfully${NC}"
+                else
+                    echo -e "${RED}Failed to restart monit service${NC}"
+                fi
+            else
+                echo -e "${YELLOW}Monit service is not running, starting it...${NC}"
+                if systemctl start monit && systemctl enable monit; then
+                    echo -e "${GREEN}Monit service started and enabled${NC}"
+                else
+                    echo -e "${YELLOW}Monit service could not be started (may need manual configuration)${NC}"
+                fi
+            fi
+        else
+            echo -e "${RED}Monitrc configuration validation failed. Please check the configuration.${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Monit is not installed or not in PATH. Configuration file installed but service not restarted.${NC}"
+    fi
+else
+    echo -e "${RED}Warning: monitrc not found in script directory ($SCRIPT_DIR)${NC}"
+    echo -e "${YELLOW}Skipping installation of monitrc${NC}"
+fi
+
 # Disable lightdm only if it exists
 #if systemctl list-unit-files | grep -q lightdm.service; then
 #    echo -e "${CYAN}Disabling lightdm...${NC}"
@@ -465,8 +515,9 @@ if [ "$GENERATE_SSH_KEYS" = true ]; then
     echo -e "6. ${CYAN}SSH keys generated and secure configuration applied${NC}"
 fi
 echo -e "7. ${CYAN}host_info_2.0_linux_amd64.sh installed to /usr/bin${NC}"
-echo -e "8. ${CYAN}Backups created in: $BACKUP_DIR${NC}"
-echo -e "9. ${CYAN}Logs available at: $LOG_FILE${NC}"
+echo -e "8. ${CYAN}monitrc configuration installed to /etc/monit/${NC}"
+echo -e "9. ${CYAN}Backups created in: $BACKUP_DIR${NC}"
+echo -e "10. ${CYAN}Logs available at: $LOG_FILE${NC}"
 
 echo -e "\n${YELLOW}Next steps:${NC}"
 echo -e "1. Review the logs at $LOG_FILE for any warnings or errors"
