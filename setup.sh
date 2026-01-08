@@ -211,6 +211,33 @@ fi
 echo -e "${CYAN}Cleaning up...${NC}"
 DEBIAN_FRONTEND=noninteractive apt autoremove -y --purge
 
+# Google Chrome setup
+echo -e "${CYAN}Setting up Google Chrome...${NC}"
+if dpkg -l | grep -q "^ii.*google-chrome-stable"; then
+    echo -e "${YELLOW}Google Chrome is already installed, skipping...${NC}"
+else
+    CHROME_DEB="/tmp/google-chrome-stable_current_amd64.deb"
+    echo -e "${BLUE}Downloading Google Chrome...${NC}"
+    if wget -q --show-progress -O "$CHROME_DEB" https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb; then
+        echo -e "${GREEN}Download completed${NC}"
+        echo -e "${BLUE}Installing Google Chrome...${NC}"
+        if dpkg -i "$CHROME_DEB"; then
+            echo -e "${GREEN}Google Chrome installed successfully${NC}"
+        else
+            echo -e "${YELLOW}Fixing dependencies...${NC}"
+            if DEBIAN_FRONTEND=noninteractive apt install -f -y; then
+                echo -e "${GREEN}Dependencies fixed and Google Chrome installed${NC}"
+            else
+                echo -e "${RED}Failed to install Google Chrome dependencies${NC}"
+            fi
+        fi
+        # Clean up downloaded file
+        rm -f "$CHROME_DEB"
+    else
+        echo -e "${RED}Failed to download Google Chrome. Check your internet connection.${NC}"
+    fi
+fi
+
 # Get actual user info
 USER_HOME=$(eval echo ~"$SUDO_USER")
 USER_NAME="$SUDO_USER"
@@ -427,18 +454,19 @@ echo -e "\n${GREEN}Setup completed successfully${NC}"
 echo -e "\n${PURPLE}Summary of actions:${NC}"
 echo -e "1. ${CYAN}System updated and upgraded${NC}"
 echo -e "2. ${CYAN}Essential packages installed${NC}"
+echo -e "3. ${CYAN}Google Chrome installed${NC}"
 if [ "$INSTALL_GUI_TOOLS" = true ] && [ -n "${DISPLAY:-}" ]; then
-    echo -e "3. ${CYAN}GUI tools installed${NC}"
+    echo -e "4. ${CYAN}GUI tools installed${NC}"
 fi
 if [ "$ENABLE_PASSWORDLESS_SUDO" = true ]; then
-    echo -e "4. ${CYAN}Passwordless sudo configured (WARNING: not recommended for production)${NC}"
+    echo -e "5. ${CYAN}Passwordless sudo configured (WARNING: not recommended for production)${NC}"
 fi
 if [ "$GENERATE_SSH_KEYS" = true ]; then
-    echo -e "5. ${CYAN}SSH keys generated and secure configuration applied${NC}"
+    echo -e "6. ${CYAN}SSH keys generated and secure configuration applied${NC}"
 fi
-echo -e "6. ${CYAN}host_info_2.0_linux_amd64.sh installed to /usr/bin${NC}"
-echo -e "7. ${CYAN}Backups created in: $BACKUP_DIR${NC}"
-echo -e "8. ${CYAN}Logs available at: $LOG_FILE${NC}"
+echo -e "7. ${CYAN}host_info_2.0_linux_amd64.sh installed to /usr/bin${NC}"
+echo -e "8. ${CYAN}Backups created in: $BACKUP_DIR${NC}"
+echo -e "9. ${CYAN}Logs available at: $LOG_FILE${NC}"
 
 echo -e "\n${YELLOW}Next steps:${NC}"
 echo -e "1. Review the logs at $LOG_FILE for any warnings or errors"
