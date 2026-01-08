@@ -287,7 +287,10 @@ sudo -u "$USER_NAME" chmod 600 "$USER_HOME/.ssh/config"
 echo -e "${CYAN}Setting up custom prompt and aliases...${NC}"
 BASH_RC_CONTENT='
 # Custom prompt
-PS1='"'"'\[\033[01;32m\][\t]\[\033[0m\] \[\033[01;35m\][\u@\h]\[\033[0m\] \[\033[01;33m\]\w\[\033[0m\]\$ '"'"'
+#PS1='"'"'\[\033[01;32m\][\t]\[\033[0m\] \[\033[01;35m\][\u@\h]\[\033[0m\] \[\033[01;33m\]\w\[\033[0m\]\$ '"'"'
+#export PS1
+
+PS1='"'"'\n\[\033[01;32m\]╭─[\t] \[\033[0m\][\[\033[01;34m\]\u\[\033[0m\]\[\033[01;35m\]@\h\[\033[0m\]]\n\[\033[01;33m\]╰─\w\[\033[0m\] \$ '"'"'
 export PS1
 
 # System aliases
@@ -320,6 +323,60 @@ alias tv='"'"'terraform validate'"'"'
 alias u='"'"'sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y'"'"'
 alias y='"'"'ssh student@std-ext-010-33.praktikum-services.tech'"'"'
 alias pp='"'"'ping -c 3 ya.ru'"'"'
+
+# ========== HISTORY CONFIGURATION ==========
+
+# History file location
+export HISTFILE=~/.bash_history
+
+# History size
+export HISTSIZE=100000
+export HISTFILESIZE=200000
+
+# Control what gets saved
+export HISTCONTROL=ignoredups:erasedups:ignorespace
+
+# Ignore specific commands
+export HISTIGNORE="&:[ ]*:exit:ls:ll:la:clear"
+
+# Timestamp format
+export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S - "
+
+# Append to history file
+shopt -s histappend
+
+# Save commands immediately
+if [ -n "${PROMPT_COMMAND:-}" ]; then
+    PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+else
+    PROMPT_COMMAND="history -a; history -c; history -r"
+fi
+
+# Log to separate file for auditing
+if [ -n "${PROMPT_COMMAND:-}" ]; then
+    export PROMPT_COMMAND='"'"'{ date "+%Y-%m-%d %H:%M:%S  $(whoami)  $(history 1 | sed "s/^[ ]*[0-9]*[ ]*//g")"; } >> ~/.bash_eternal_history 2>/dev/null;'"'"'"$PROMPT_COMMAND"
+else
+    export PROMPT_COMMAND='"'"'{ date "+%Y-%m-%d %H:%M:%S  $(whoami)  $(history 1 | sed "s/^[ ]*[0-9]*[ ]*//g")"; } >> ~/.bash_eternal_history 2>/dev/null;'"'"'
+fi
+
+# ========== HISTORY ALIASES ==========
+
+# Search history
+alias h='"'"'history'"'"'
+alias hg='"'"'history | grep'"'"'
+alias hgi='"'"'history | grep -i'"'"'
+
+# Show recent history
+alias hr='"'"'history | tail -50'"'"'
+
+# Show most used commands
+alias topcmds='"'"'history | awk "{print \$2}" | sort | uniq -c | sort -rn | head -20'"'"'
+
+# Clear history
+alias clearhist='"'"'history -c && history -w'"'"'
+
+# Export history to file
+alias exphist='"'"'history -w ~/history_export_$(date +%Y%m%d_%H%M%S).txt'"'"'
 '
 
 # Check if content already exists
