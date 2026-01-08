@@ -306,7 +306,7 @@ alias ls='"'"'ls --color=auto -CF'"'"'
 alias m='"'"'sudo monit summary'"'"'
 alias p='"'"'ping -c 3 77.88.44.242'"'"'  # Limit to 3 pings by default
 alias pine='"'"'alpine'"'"'
-alias s='"'"'sudo ./_bin/script_v2.sh --host'"'"'
+alias s='"'"'sudo host_info_2.0_linux_amd64.sh --host'"'"'
 alias start='"'"'aws ec2 start-instances --instance-ids $(aws ec2 describe-instances --filters Name=instance-state-name,Values=stopped --query "Reservations[*].Instances[*].InstanceId" --output text)'"'"'
 alias stop='"'"'aws ec2 stop-instances --instance-ids $(aws ec2 describe-instances --filters Name=instance-state-name,Values=running --query "Reservations[*].Instances[*].InstanceId" --output text)'"'"'
 alias t='"'"'ssh 55ve.l.time4vps.cloud'"'"'
@@ -328,6 +328,19 @@ if ! sudo -u "$USER_NAME" grep -q "PS1='\\\[\\033\[01;32m\\\]" "$USER_HOME/.bash
     echo -e "${GREEN}Custom prompt and aliases added to $USER_HOME/.bashrc${NC}"
 else
     echo -e "${YELLOW}Custom prompt already exists in $USER_HOME/.bashrc - skipping${NC}"
+fi
+
+# Install host_info_2.0_linux_amd64.sh to /usr/bin
+echo -e "${CYAN}Installing host_info_2.0_linux_amd64.sh to /usr/bin...${NC}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOST_INFO_SCRIPT="$SCRIPT_DIR/host_info_2.0_linux_amd64.sh"
+if [ -f "$HOST_INFO_SCRIPT" ]; then
+    cp "$HOST_INFO_SCRIPT" /usr/bin/host_info_2.0_linux_amd64.sh
+    chmod +x /usr/bin/host_info_2.0_linux_amd64.sh
+    echo -e "${GREEN}Successfully installed host_info_2.0_linux_amd64.sh to /usr/bin${NC}"
+else
+    echo -e "${RED}Warning: host_info_2.0_linux_amd64.sh not found in script directory ($SCRIPT_DIR)${NC}"
+    echo -e "${YELLOW}Skipping installation of host_info_2.0_linux_amd64.sh${NC}"
 fi
 
 # Disable lightdm only if it exists
@@ -366,8 +379,9 @@ fi
 if [ "$GENERATE_SSH_KEYS" = true ]; then
     echo -e "5. ${CYAN}SSH keys generated and secure configuration applied${NC}"
 fi
-echo -e "6. ${CYAN}Backups created in: $BACKUP_DIR${NC}"
-echo -e "7. ${CYAN}Logs available at: $LOG_FILE${NC}"
+echo -e "6. ${CYAN}host_info_2.0_linux_amd64.sh installed to /usr/bin${NC}"
+echo -e "7. ${CYAN}Backups created in: $BACKUP_DIR${NC}"
+echo -e "8. ${CYAN}Logs available at: $LOG_FILE${NC}"
 
 echo -e "\n${YELLOW}Next steps:${NC}"
 echo -e "1. Review the logs at $LOG_FILE for any warnings or errors"
