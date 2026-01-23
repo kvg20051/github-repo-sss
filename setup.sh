@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail  # Fail on errors and undefined variables
 
-# Configuration
+# Configuration 1
 ENABLE_PASSWORDLESS_SUDO=true
 INSTALL_GUI_TOOLS=false
 GENERATE_SSH_KEYS=true
