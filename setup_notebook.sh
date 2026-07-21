@@ -36,7 +36,7 @@ HOSTS_BLOCK=$(cat <<'EOF'
 10.124.124.1    gen20               # wg4   ProLiant MicroServer Gen20
 10.124.124.16   gen30               # wg4   ProLiant MicroServer Gen30
 10.124.124.11   ficus               # wg4   FICUS
-10.124.124.19   gen40               # wg4   ProLiant MicroServer Gen40
+10.124.124.19   gen40               # wg4   gen40
 EOF
 )
 
@@ -93,3 +93,24 @@ fi
 
 echo "==> Done. Note: NetworkManager was not restarted; the powersave setting"
 echo "    will take effect on next NetworkManager restart or reboot."
+
+# -----------------------------------------------------------------------------
+# 4) Install monitrc into /etc/monit/
+# -----------------------------------------------------------------------------
+echo "==> Installing monitrc..."
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+SRC_MONITRC="${SCRIPT_DIR}/monitrc"
+DEST_MONITRC="/etc/monit/monitrc"
+
+if [[ -f "$SRC_MONITRC" ]]; then
+    mkdir -p /etc/monit
+    install -m 600 -o root -g root "$SRC_MONITRC" "$DEST_MONITRC"
+    echo "    Installed ${SRC_MONITRC} -> ${DEST_MONITRC}"
+
+    echo "==> Restarting monit service..."
+    systemctl restart monit
+    echo "    monit restarted."
+else
+    echo "    WARNING: ${SRC_MONITRC} not found next to this script — skipping monitrc install." >&2
+fi
