@@ -49,6 +49,9 @@ DISK_TOOLS_PACKAGES=(
     "xfsprogs"
     "gparted"
     "hdparm"
+    "smartmontools"
+    "fio"
+    "e2fsprogs"
 )
 
 # Security/network packages
@@ -63,6 +66,7 @@ MISC_UTILITIES_PACKAGES=(
     "jq"
     "plocate"
     "neofetch"
+    "fastfetch"
     "mc"
     "git"
     "fuse"
