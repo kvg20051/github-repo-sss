@@ -355,7 +355,8 @@ alias tv='"'"'terraform validate'"'"'
 alias u='"'"'sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y'"'"'
 alias y='"'"'ssh student@std-ext-010-33.praktikum-services.tech'"'"'
 alias pp='"'"'ping -c 3 ya.ru'"'"'
-alias w='"'"'watch -n 10 sudo fail2ban-client status sshd'"'"'
+alias ww='"'"'watch -n 10 sudo fail2ban-client status sshd'"'"'
+alias md='"'"'sudo mdadm --detail /dev/md0'"'"'
 
 # ========== HISTORY CONFIGURATION ==========
 
