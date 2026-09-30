@@ -19,6 +19,8 @@ SYSTEM_MONITORING_PACKAGES=(
     "sysstat=12.*"
     "smartmontools=7.*"
     "ncdu=1.*"
+    "ncal"
+    "xz"
 )
 
 # Network tools packages
