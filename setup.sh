@@ -347,6 +347,7 @@ alias s='"'"'sudo host_info_2.0_linux_amd64.sh --host'"'"'
 alias start='"'"'aws ec2 start-instances --instance-ids $(aws ec2 describe-instances --filters Name=instance-state-name,Values=stopped --query "Reservations[*].Instances[*].InstanceId" --output text)'"'"'
 alias stop='"'"'aws ec2 stop-instances --instance-ids $(aws ec2 describe-instances --filters Name=instance-state-name,Values=running --query "Reservations[*].Instances[*].InstanceId" --output text)'"'"'
 alias t='"'"'ssh 55ve.l.time4vps.cloud'"'"'
+alias c='"'"'curl ifconfig.me'"'"'
 # ====== terraform aliases =============================
 alias ta='"'"'terraform apply -auto-approve'"'"'
 alias td='"'"'terraform destroy -auto-approve'"'"'
