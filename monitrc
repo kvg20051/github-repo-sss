@@ -67,14 +67,11 @@ check host [ficus]_10.124.124.11 with address 10.124.124.11
 check host [T4VPS]_10.124.124.6 with address 10.124.124.6
    if failed icmp type echo count 5 with timeout 15 seconds then alert
 
-check host [r27]_kvg2005rtac65p.asuscomm.com with address 95.31.179.122
+check host [r14]_kvg2005rtac65p.asuscomm.com with address 95.31.179.122
     if failed icmp type echo count 5 with timeout 15 seconds then alert
 
-check host [r25]_kvg2005RTAC85P.asuscomm.com  with address 46.242.1.254
+check host [r13]_kvg2005RTAC85P.asuscomm.com  with address 46.242.1.254
     if failed icmp type echo count 5 with timeout 15 seconds then alert
 
-check host [r29]_kvg2005RTAX86S.asuscomm.com with address 185.9.77.170
-    if failed icmp type echo count 5 with timeout 15 seconds then alert
-
-check host [r29]_kvg2005RTBE86U.asuscomm.com with address 193.23.50.48
+check host [r16]_kvg2005RTAX86S.asuscomm.com with address 185.9.77.170
     if failed icmp type echo count 5 with timeout 15 seconds then alert
