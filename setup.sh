@@ -79,7 +79,6 @@ MISC_UTILITIES_PACKAGES=(
     "mdadm"
     "xclip"
     "wrk"
-    "vlc"
     "monit"
 )
 
