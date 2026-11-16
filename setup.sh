@@ -67,7 +67,6 @@ MISC_UTILITIES_PACKAGES=(
     "unzip"
     "jq"
     "plocate"
-    "neofetch"
     "fastfetch"
     "mc"
     "git"

@@ -75,3 +75,4 @@ check host [r13]_kvg2005RTAC85P.asuscomm.com  with address 46.242.1.254
 
 check host [r16]_kvg2005RTAX86S.asuscomm.com with address 185.9.77.170
     if failed icmp type echo count 5 with timeout 15 seconds then alert
+
