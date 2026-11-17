@@ -1,0 +1,35 @@
+---
+- name: OS update
+  hosts: all
+  gather_facts: yes
+  become: yes
+
+  tasks:
+    - name: dist-upgrade
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: yes
+      register: upgrade_result
+
+    - name: Check if a reboot is required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+        get_checksum: no
+      register: reboot_required_file
+
+    - name: Reboot the server (if required).
+      ansible.builtin.reboot:
+      when: reboot_required_file.stat.exists
+      register: reboot_result
+
+    - name: Remove unneeded dependencies
+      ansible.builtin.apt:
+        autoremove: yes
+      register: autoremove_result
+
+    - name: Print errors if upgrade failed
+      ansible.builtin.debug:
+        msg: |
+          Upgrade Result: {{ upgrade_result }}
+          Reboot Result: {{ reboot_result }}
+          Autoremove Result: {{ autoremove_result }}

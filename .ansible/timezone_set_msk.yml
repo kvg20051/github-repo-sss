@@ -1,0 +1,22 @@
+---
+- name: Configure Timezone
+#sudo timedatectl set-timezone Europe/Moscow
+  hosts: all
+  become: yes
+  tasks:
+    - name: Set timezone to Europe/Moscow
+      become: true
+      community.general.timezone:
+        name: Europe/Moscow
+
+    - name: Generate an OpenSSH keypair with the default values (4096 bits, rsa)
+      openssh_keypair:
+        path: /home/ansible/.ssh/id_rsa
+        owner: ansible
+        group: ansible
+
+    - name: Fix owner of the generated pub key
+      file:
+        path: /home/ansible/.ssh/id_rsa.pub
+        owner: ansible
+        group: ansible
