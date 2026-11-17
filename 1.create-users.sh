@@ -28,6 +28,7 @@ else
     useradd -m -s /bin/bash -c "$FULLNAME" kvg1
     echo "Создан kvg1"
 fi
+usermod -aG sudo kvg1
 echo "Пароль для kvg1:"
 passwd kvg1
 
