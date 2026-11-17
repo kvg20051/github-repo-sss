@@ -76,3 +76,23 @@ check host [r13]_kvg2005RTAC85P.asuscomm.com  with address 46.242.1.254
 check host [r16]_kvg2005RTAX86S.asuscomm.com with address 185.9.77.170
     if failed icmp type echo count 5 with timeout 15 seconds then alert
 
+check host [hub] with address 46.8.181.42
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [git] with address 46.8.181.71
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [stage] with address 46.8.181.70
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [prod] with address 46.8.181.72
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [fin] with address 132.243.22.149
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+check host [wuxu.ru] with address 46.8.180.83
+   if failed icmp type echo count 5 with timeout 15 seconds then alert
+
+
+
