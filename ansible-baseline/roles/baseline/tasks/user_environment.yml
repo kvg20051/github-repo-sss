@@ -1,0 +1,117 @@
+---
+- name: Ensure a private SSH directory
+  ansible.builtin.file:
+    path: "{{ baseline_admin_account.home }}/.ssh"
+    state: directory
+    owner: "{{ baseline_admin_account.name }}"
+    group: "{{ baseline_admin_account.group }}"
+    mode: "0700"
+
+- name: Inspect managed SSH key permissions without reading key contents
+  ansible.builtin.stat:
+    path: "{{ baseline_admin_account.home }}/.ssh/id_ed25519{{ item }}"
+    get_checksum: false
+    get_mime: false
+  loop: ["", ".pub"]
+  register: baseline_admin_key_files
+  when: baseline_admin_account.item.generate_ssh_key | default(baseline_user_generate_ssh_key) | bool
+
+- name: Restrict existing generated key files to their owner
+  ansible.builtin.file:
+    path: "{{ item.stat.path }}"
+    owner: "{{ baseline_admin_account.name }}"
+    group: "{{ baseline_admin_account.group }}"
+    mode: "0600"
+  loop: "{{ baseline_admin_key_files.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stat.exists | default(false)
+
+- name: Configure SSH client defaults
+  when: baseline_admin_account.item.configure_ssh_client | default(baseline_user_configure_ssh_client) | bool
+  block:
+    - name: Inspect the SSH client configuration
+      ansible.builtin.stat:
+        path: "{{ baseline_admin_account.home }}/.ssh/config"
+        get_checksum: false
+        get_mime: false
+      register: baseline_admin_ssh_config
+
+    - name: Remove the exact legacy SSH client block from setup
+      ansible.builtin.replace:
+        path: "{{ baseline_admin_account.home }}/.ssh/config"
+        regexp: "{{ lookup('ansible.builtin.file', 'setup-legacy-ssh.conf', rstrip=false) | regex_escape }}"
+        replace: ""
+        backup: true
+      when: baseline_admin_ssh_config.stat.exists
+
+    - name: Append managed SSH client defaults after host-specific settings
+      ansible.builtin.blockinfile:
+        path: "{{ baseline_admin_account.home }}/.ssh/config"
+        marker: "# {mark} ANSIBLE BASELINE SSH CLIENT"
+        block: "{{ lookup('ansible.builtin.file', 'ssh-client.conf') }}"
+        insertafter: EOF
+        prepend_newline: true
+        create: true
+        owner: "{{ baseline_admin_account.name }}"
+        group: "{{ baseline_admin_account.group }}"
+        mode: "0600"
+        backup: true
+
+- name: Configure the Bash environment
+  when: baseline_admin_account.item.configure_bash | default(baseline_user_configure_bash) | bool
+  block:
+    - name: Install the interactive Bash settings
+      ansible.builtin.copy:
+        src: bashrc.baseline
+        dest: "{{ baseline_admin_account.home }}/.bashrc.baseline"
+        owner: "{{ baseline_admin_account.name }}"
+        group: "{{ baseline_admin_account.group }}"
+        mode: "0644"
+        validate: /bin/bash -n %s
+
+    - name: Inspect bashrc before migrating the setup block
+      ansible.builtin.stat:
+        path: "{{ baseline_admin_account.home }}/.bashrc"
+        get_checksum: false
+        get_mime: false
+      register: baseline_admin_bashrc
+
+    - name: Remove the exact legacy Bash block from setup
+      ansible.builtin.replace:
+        path: "{{ baseline_admin_account.home }}/.bashrc"
+        regexp: "{{ lookup('ansible.builtin.file', 'setup-legacy-bashrc', rstrip=false) | regex_escape }}"
+        replace: ""
+        backup: true
+        validate: /bin/bash -n %s
+      when: baseline_admin_bashrc.stat.exists
+
+    - name: Load managed settings at the end of bashrc
+      ansible.builtin.blockinfile:
+        path: "{{ baseline_admin_account.home }}/.bashrc"
+        marker: "# {mark} ANSIBLE BASELINE BASH"
+        block: |
+          if [ -f "$HOME/.bashrc.baseline" ]; then
+              . "$HOME/.bashrc.baseline"
+          fi
+        insertafter: EOF
+        prepend_newline: true
+        create: true
+        owner: "{{ baseline_admin_account.name }}"
+        group: "{{ baseline_admin_account.group }}"
+        mode: "0644"
+        backup: true
+        validate: /bin/bash -n %s
+
+    - name: Keep history files private without truncating their contents
+      ansible.builtin.file:
+        path: "{{ baseline_admin_account.home }}/{{ item }}"
+        state: touch
+        access_time: preserve
+        modification_time: preserve
+        owner: "{{ baseline_admin_account.name }}"
+        group: "{{ baseline_admin_account.group }}"
+        mode: "0600"
+      loop:
+        - .bash_history
+        - .bash_eternal_history

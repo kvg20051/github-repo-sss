@@ -6,6 +6,12 @@
     groups: sudo
     append: true
     state: present
+    generate_ssh_key: "{{ item.generate_ssh_key | default(baseline_user_generate_ssh_key) | bool }}"
+    ssh_key_type: ed25519
+    ssh_key_file: .ssh/id_ed25519
+    ssh_key_comment: "{{ item.name }}@{{ ansible_facts['hostname'] }}"
+    force: false
+  register: baseline_admin_accounts
   loop: "{{ baseline_admins }}"
   loop_control:
     label: "{{ item.name }}"
@@ -44,3 +50,14 @@
   ansible.builtin.command: /usr/sbin/visudo -c
   changed_when: false
   when: not ansible_check_mode
+
+- name: Configure each administrator's SSH client and shell environment
+  ansible.builtin.include_tasks:
+    file: user_environment.yml
+    apply:
+      tags: [users]
+  loop: "{{ baseline_admin_accounts.results }}"
+  loop_control:
+    loop_var: baseline_admin_account
+    label: "{{ baseline_admin_account.item.name }}"
+  when: baseline_admin_account.home is defined

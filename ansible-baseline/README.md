@@ -103,6 +103,103 @@ Ansible на mail**, а затем добавляется на целевые с
 пользователя подключения, заранее обеспечьте ему рабочий пароль sudo
 или используйте другого администратора.
 
+#### Личные ключи, SSH-клиент и Bash
+
+Настройки перенесены из [2.setup.sh](../2.setup.sh) и применяются к каждому
+пользователю из `baseline_admins`. Код:
+[tasks/user_environment.yml](roles/baseline/tasks/user_environment.yml).
+Домашний каталог и основная группа берутся из результата модуля `user`,
+поэтому путь не ограничен `/home/<имя>`.
+
+| Файл в домашнем каталоге | Действие |
+| --- | --- |
+| `.ssh/` | Каталог пользователя с правами `0700` |
+| `.ssh/id_ed25519`, `.ssh/id_ed25519.pub` | Генерация личной пары Ed25519 без passphrase, если приватного ключа ещё нет; права `0600` |
+| `.ssh/config` | Управляемый блок настроек исходящих SSH-подключений; права `0600` |
+| `.bashrc.baseline` | Приглашение, алиасы и история Bash; права `0644` |
+| `.bashrc` | Блок подключения `.bashrc.baseline` в конце файла; права `0644` |
+| `.bash_history`, `.bash_eternal_history` | Создание при отсутствии и права `0600`; существующее содержимое не очищается |
+
+Существующий приватный ключ не заменяется. Новые ключи создаются на целевом
+хосте; их приватная часть не копируется на управляющий узел. Это личные ключи
+для исходящих подключений, отдельно от ключей `ssh_keys`, добавляемых в
+`authorized_keys` для входа на сервер.
+
+Настройки клиента из
+[files/ssh-client.conf](roles/baseline/files/ssh-client.conf):
+
+| Параметр | Значение |
+| --- | --- |
+| `StrictHostKeyChecking` | `ask` |
+| `UserKnownHostsFile` | `~/.ssh/known_hosts` |
+| `IdentitiesOnly`, `HashKnownHosts` | `yes` |
+| `ForwardAgent`, `ForwardX11` | `no` |
+| `ServerAliveInterval`, `ServerAliveCountMax` | `60` секунд, `3` |
+| `ControlMaster` | `auto` |
+| `ControlPath` | `~/.ssh/control-%C` |
+| `ControlPersist` | `10m` |
+
+Блок `Host *` добавляется после существующих настроек клиента. Более ранние
+значения в пользовательских `Host`/`Match` сохраняют приоритет.
+Это настройки SSH-клиента пользователя; параметры SSH-сервера описаны
+в следующем разделе.
+
+[files/bashrc.baseline](roles/baseline/files/bashrc.baseline) загружается
+только для интерактивного Bash и содержит:
+
+- Цветное двухстрочное приглашение с временем, пользователем, хостом и каталогом.
+- Алиасы из скрипта: файловые и сетевые команды, Monit, AWS, Kubernetes,
+  Terraform, обновление пакетов и поиск по истории. Их команды выполняются
+  только при вызове алиаса; необходимые утилиты устанавливаются отдельно.
+- `HISTSIZE=100000`, `HISTFILESIZE=200000`,
+  `HISTCONTROL=ignoredups:erasedups:ignorespace`,
+  `HISTIGNORE="&:[ ]*:exit:ls:ll:la:clear"` и временные метки
+  `%Y-%m-%d %H:%M:%S - `.
+- Дописывание и перечитывание `.bash_history` перед новым приглашением,
+  дополнительную запись команды, времени и пользователя в
+  `.bash_eternal_history`. Это пользовательский журнал, доступный владельцу.
+- Обработчик `PROMPT_COMMAND`, сохраняющий существующие строковые или массивные
+  обработчики; повторное подключение файла не добавляет его второй раз.
+
+Перед записью Bash-файлов выполняется `bash -n`.
+Из `.bashrc` и `.ssh/config` удаляются только точные исходные блоки
+из `2.setup.sh`, если они обнаружены; копии этих блоков хранятся в
+[setup-legacy-bashrc](roles/baseline/files/setup-legacy-bashrc) и
+[setup-legacy-ssh.conf](roles/baseline/files/setup-legacy-ssh.conf).
+Собственные записи вне управляемых блоков сохраняются, перед изменением
+`.bashrc` и `.ssh/config` создаются резервные копии.
+Если старый блок редактировался вручную, он сохраняется: его следует сверить
+с новыми настройками и убрать дубли самостоятельно.
+
+Все три возможности включены по умолчанию и управляются независимо:
+
+| Значение роли | Переопределение в элементе `baseline_admins` |
+| --- | --- |
+| `baseline_user_generate_ssh_key: true` | `generate_ssh_key` |
+| `baseline_user_configure_ssh_client: true` | `configure_ssh_client` |
+| `baseline_user_configure_bash: true` | `configure_bash` |
+
+Например, чтобы настроить Bash, сохранив управление личным ключом и
+SSH-клиентом за пользователем:
+
+```yaml
+baseline_admins:
+  - name: kvg
+    shell: /bin/bash
+    ssh_keys:
+      - "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
+    sudo_nopasswd: true
+    generate_ssh_key: false
+    configure_ssh_client: false
+    configure_bash: true
+```
+
+Значение `false` пропускает соответствующую настройку, но не удаляет ранее
+созданные файлы или ключи. В `--check` для ещё не созданного пользователя
+настройка окружения пропускается, если модуль `user` ещё не вернул домашний
+каталог. Для уже работающего терминала откройте новую Bash-сессию, чтобы
+загрузить обновлённые настройки.
+
 ### 4. SSH — тег `ssh`
 
 Код: [tasks/ssh.yml](roles/baseline/tasks/ssh.yml),
@@ -353,6 +450,8 @@ ansible-playbook baseline.yml --limit git.wax.su --diff
 ```bash
 ansible-playbook baseline.yml --limit stage.wax.su --tags ufw --check --diff
 ansible-playbook baseline.yml --limit stage.wax.su --tags ufw --diff
+ansible-playbook baseline.yml --limit stage.wax.su --tags users --check --diff
+ansible-playbook baseline.yml --limit stage.wax.su --tags users --diff
 ansible-playbook baseline.yml --limit stage.wax.su --tags users,ssh,ufw,fail2ban --diff
 ```
 
@@ -374,7 +473,8 @@ ansible-playbook baseline.yml --limit stage.wax.su --tags users,ssh,ufw,fail2ban
 Вывод `--diff` зависит от модуля; рендеринг временного SSH-кандидата и сохранение
 его предыдущего содержимого выполняются с `diff: false`.
 
-Ручные изменения управляемых файлов перезаписываются при следующем применении.
+Ручные изменения полностью управляемых файлов перезаписываются при следующем
+применении; в `.bashrc` и `.ssh/config` роль управляет только своими блоками.
 Для постоянных изменений используйте переменные, задачи или шаблоны роли.
 Удаление пользователя, ключа или правила из списка переменных само по себе
 не удаляет ранее созданный объект на сервере, кроме явно описанного удаления
