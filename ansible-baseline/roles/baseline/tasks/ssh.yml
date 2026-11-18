@@ -1,32 +1,167 @@
 ---
-# Защита от блокировки: пароль отключаем, только если у connect-пользователя есть ключ
-- name: Check that the connecting user has authorized_keys
-  ansible.builtin.stat:
-    path: "~{{ ansible_user | default(lookup('env', 'USER')) }}/.ssh/authorized_keys"
-  register: connect_user_keys
-  when: ansible_connection != 'local'
+- name: Resolve SSH probe settings on the target host
+  ansible.builtin.set_fact:
+    baseline_ssh_target:
+      host: "{{ ansible_host | default(inventory_hostname) }}"
+      user: "{{ ansible_user | default('') }}"
+      port: "{{ ansible_port | default(ansible_ssh_port | default(22)) }}"
+      key: "{{ ansible_private_key_file | default(ansible_ssh_private_key_file | default('')) }}"
+      common_args: "{{ ansible_ssh_common_args | default('') }}"
+      extra_args: "{{ ansible_ssh_extra_args | default('') }}"
+      executable: "{{ ansible_ssh_executable | default('ssh') }}"
 
-- name: Refuse to disable password auth without keys
+- name: Require a usable administrator and an unchanged SSH port
   ansible.builtin.assert:
     that:
-      - connect_user_keys.stat.exists
-      - connect_user_keys.stat.size > 0
+      - baseline_ssh_target.user | length > 0
+      - baseline_ssh_target.user != 'root' or baseline_ssh_permit_root_login != 'no'
+      - baseline_ssh_target.port | int == baseline_ssh_port | int
     fail_msg: >-
-      У пользователя {{ ansible_user }} нет authorized_keys на {{ inventory_hostname }}.
-      Отключение входа по паролю заблокирует доступ — остановлено.
-  when:
-    - ansible_connection != 'local'
-    - baseline_ssh_password_auth == 'no'
+      Set ansible_user to the administrator that will retain SSH access.
+      Run this role as that user. SSH port migrations require a separate procedure.
 
-- name: SSH hardening drop-in
-  ansible.builtin.template:
-    src: sshd_baseline.conf.j2
-    dest: /etc/ssh/sshd_config.d/10-baseline.conf
-    mode: "0644"
-  register: sshd_dropin
-  notify: Reload ssh
+- name: Prove key login before changing authentication
+  ansible.builtin.include_tasks: ssh_probe.yml
 
-- name: Validate full sshd config
-  ansible.builtin.command: /usr/sbin/sshd -t
+- name: Create a private SSH validation directory
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: baseline-ssh-
+  register: baseline_ssh_stage
+  check_mode: false
   changed_when: false
-  when: sshd_dropin is changed
+
+- name: Prepare and install validated SSH configuration
+  block:
+    - name: Render the candidate without replacing the live configuration
+      ansible.builtin.template:
+        src: sshd_baseline.conf.j2
+        dest: "{{ baseline_ssh_stage.path }}/candidate.conf"
+        owner: root
+        group: root
+        mode: "0600"
+      check_mode: false
+      changed_when: false
+      diff: false
+
+    - name: Stage the full-configuration validator
+      ansible.builtin.copy:
+        src: validate_sshd.py
+        dest: "{{ baseline_ssh_stage.path }}/validate_sshd.py"
+        owner: root
+        group: root
+        mode: "0600"
+      check_mode: false
+      changed_when: false
+
+    - name: Validate the candidate and effective global authentication settings
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - "{{ baseline_ssh_stage.path }}/validate_sshd.py"
+          - "--candidate={{ baseline_ssh_stage.path }}/candidate.conf"
+          - "--password-auth={{ baseline_ssh_password_auth }}"
+          - "--root-login={{ baseline_ssh_permit_root_login }}"
+      check_mode: false
+      changed_when: false
+
+    - name: Record the previous drop-in state
+      ansible.builtin.stat:
+        path: /etc/ssh/sshd_config.d/10-baseline.conf
+        follow: false
+        get_checksum: false
+        get_mime: false
+      register: baseline_ssh_previous
+
+    - name: Require a regular file or an absent drop-in
+      ansible.builtin.assert:
+        that:
+          - not baseline_ssh_previous.stat.exists or (baseline_ssh_previous.stat.isreg | default(false))
+        fail_msg: The managed SSH drop-in must be a regular file, not a symlink or directory.
+
+    - name: Preserve previous contents independently of copy change detection
+      ansible.builtin.copy:
+        src: /etc/ssh/sshd_config.d/10-baseline.conf
+        remote_src: true
+        dest: "{{ baseline_ssh_stage.path }}/previous.conf"
+        owner: root
+        group: root
+        mode: "0600"
+      when: baseline_ssh_previous.stat.exists
+      check_mode: false
+      changed_when: false
+      diff: false
+
+    - name: Install and verify the SSH configuration with rollback
+      block:
+        - name: Install the validated drop-in and preserve its previous version
+          ansible.builtin.copy:
+            src: "{{ baseline_ssh_stage.path }}/candidate.conf"
+            remote_src: true
+            dest: /etc/ssh/sshd_config.d/10-baseline.conf
+            owner: root
+            group: root
+            mode: "0644"
+            backup: true
+          register: baseline_ssh_install
+
+        - name: Validate the installed full configuration on every real run
+          ansible.builtin.command: /usr/sbin/sshd -t
+          changed_when: false
+          when: not ansible_check_mode
+
+        - name: Reload SSH immediately after a validated change
+          ansible.builtin.service:
+            name: ssh
+            state: reloaded
+          when:
+            - not ansible_check_mode
+            - baseline_ssh_install is changed
+
+        - name: Prove key login with the resulting configuration
+          ansible.builtin.include_tasks: ssh_probe.yml
+          when: not ansible_check_mode
+
+      rescue:
+        - name: Restore the previous baseline drop-in
+          ansible.builtin.copy:
+            src: "{{ baseline_ssh_stage.path }}/previous.conf"
+            remote_src: true
+            dest: /etc/ssh/sshd_config.d/10-baseline.conf
+            owner: "{{ baseline_ssh_previous.stat.uid }}"
+            group: "{{ baseline_ssh_previous.stat.gid }}"
+            mode: "{{ baseline_ssh_previous.stat.mode }}"
+          when:
+            - not ansible_check_mode
+            - baseline_ssh_previous.stat.exists
+
+        - name: Remove a newly created baseline drop-in after failure
+          ansible.builtin.file:
+            path: /etc/ssh/sshd_config.d/10-baseline.conf
+            state: absent
+          when:
+            - not ansible_check_mode
+            - not baseline_ssh_previous.stat.exists
+
+        - name: Validate the restored configuration
+          ansible.builtin.command: /usr/sbin/sshd -t
+          changed_when: false
+          when: not ansible_check_mode
+
+        - name: Reload the restored configuration
+          ansible.builtin.service:
+            name: ssh
+            state: reloaded
+          when: not ansible_check_mode
+
+        - name: Report the failed SSH update
+          ansible.builtin.fail:
+            msg: SSH verification failed. The rollback tasks restored the previous drop-in.
+
+  always:
+    - name: Remove SSH validation files
+      ansible.builtin.file:
+        path: "{{ baseline_ssh_stage.path }}"
+        state: absent
+      check_mode: false
+      changed_when: false

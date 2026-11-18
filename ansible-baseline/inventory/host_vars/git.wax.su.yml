@@ -7,3 +7,8 @@ baseline_ufw_rules:
 
 # Хост маршрутизирует трафик WireGuard — форвардинг нужен
 baseline_ip_forward: true
+
+baseline_ufw_route_rules:
+  - interface_in: wg8
+    src: any
+    dest: any

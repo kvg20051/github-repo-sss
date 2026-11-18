@@ -13,3 +13,30 @@
       APT::Periodic::Update-Package-Lists "1";
       APT::Periodic::Unattended-Upgrade "1";
       APT::Periodic::AutocleanInterval "7";
+
+- name: Read the merged APT configuration
+  ansible.builtin.command: apt-config dump
+  register: baseline_apt_config
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Reject later files that broaden allowed update origins
+  ansible.builtin.assert:
+    that:
+      - >-
+        baseline_apt_config.stdout |
+        regex_findall('(?m)^Unattended-Upgrade::Allowed-Origins::[^ ]* "(.*)";$') |
+        sort == baseline_expected_origins | sort
+      - >-
+        baseline_apt_config.stdout |
+        regex_findall('(?m)^Unattended-Upgrade::Origins-Pattern::[^ ]* "(.*)";$') |
+        length == 0
+    fail_msg: >-
+      Another APT configuration changes the security-only policy.
+      Inspect apt-config dump and files loaded after 52baseline-unattended.
+  vars:
+    baseline_expected_origins:
+      - '${distro_id}:${distro_codename}-security'
+      - '${distro_id}ESMApps:${distro_codename}-apps-security'
+      - '${distro_id}ESM:${distro_codename}-infra-security'
+  when: not ansible_check_mode

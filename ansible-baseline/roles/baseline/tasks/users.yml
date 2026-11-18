@@ -30,3 +30,17 @@
   loop: "{{ baseline_admins | selectattr('sudo_nopasswd', 'defined') | selectattr('sudo_nopasswd') | list }}"
   loop_control:
     label: "{{ item.name }}"
+
+- name: Remove managed passwordless sudo when disabled
+  ansible.builtin.file:
+    path: "/etc/sudoers.d/90-{{ item.name }}"
+    state: absent
+  loop: "{{ baseline_admins }}"
+  when: not (item.sudo_nopasswd | default(false) | bool)
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Validate the complete sudo configuration
+  ansible.builtin.command: /usr/sbin/visudo -c
+  changed_when: false
+  when: not ansible_check_mode
