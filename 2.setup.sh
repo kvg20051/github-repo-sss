@@ -58,7 +58,6 @@ DISK_TOOLS_PACKAGES=(
 
 # Security/network packages
 SECURITY_PACKAGES=(
-    "wireguard-tools"
     "openssh-server"
 )
 

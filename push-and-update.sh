@@ -44,7 +44,7 @@ REMOTE
     } | ssh -T -o ConnectTimeout=15 "$host" bash -s
 }
 
-update_host "kvg@hub.wax.su" "/home/kvg/github-repo-sss"
+update_host "kvg@mail" "/home/kvg/github-repo-sss"
 update_host "kvg@ficus" "/home/kvg/_Git_projects/github-repo-sss"
 
 echo "Обновление обоих хостов завершено."

@@ -3,8 +3,7 @@
 # setup-system.sh
 # Ubuntu 26 host setup:
 #   1) Mask sleep/suspend/hibernate targets
-#   2) Add WireGuard hub hosts to /etc/hosts
-#   3) Set wifi.powersave = 2 in NetworkManager conf.d
+#   2) Set wifi.powersave = 2 in NetworkManager conf.d
 #
 # Idempotent: safe to re-run without duplicating entries.
 # Must be run as root (or with sudo).
@@ -23,42 +22,7 @@ echo "==> Masking sleep/suspend/hibernate targets..."
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 
 # -----------------------------------------------------------------------------
-# 2) Add hosts entries to /etc/hosts (idempotent)
-# -----------------------------------------------------------------------------
-echo "==> Updating /etc/hosts..."
-
-HOSTS_FILE="/etc/hosts"
-MARKER_BEGIN="# BEGIN wg4-hosts (managed by setup-system.sh)"
-MARKER_END="# END wg4-hosts (managed by setup-system.sh)"
-
-HOSTS_BLOCK=$(cat <<'EOF'
-10.124.124.2    gen10               # wg4   ProLiant MicroServer Gen10 - wg4 wireguard vpn hub. Net - 10.123.123.0/24
-10.124.124.1    gen20               # wg4   ProLiant MicroServer Gen20
-10.124.124.16   gen30               # wg4   ProLiant MicroServer Gen30
-10.124.124.11   ficus               # wg4   FICUS
-10.124.124.19   gen40               # wg4   gen40
-EOF
-)
-
-if grep -qF "$MARKER_BEGIN" "$HOSTS_FILE" 2>/dev/null; then
-    # Remove the old managed block entirely (markers inclusive), then re-append fresh below
-    sed -i "/^${MARKER_BEGIN//\//\\/}$/,/^${MARKER_END//\//\\/}$/d" "$HOSTS_FILE"
-    echo "    Removed previous managed block (will re-add below)."
-fi
-
-# Strip any trailing blank lines left over from previous edits, then append cleanly
-sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$HOSTS_FILE"
-
-{
-    echo ""
-    echo "$MARKER_BEGIN"
-    echo "$HOSTS_BLOCK"
-    echo "$MARKER_END"
-} >> "$HOSTS_FILE"
-echo "    Managed block written."
-
-# -----------------------------------------------------------------------------
-# 3) Set wifi.powersave = 2 in NetworkManager conf.d
+# 2) Set wifi.powersave = 2 in NetworkManager conf.d
 # -----------------------------------------------------------------------------
 echo "==> Configuring NetworkManager wifi powersave..."
 
@@ -95,7 +59,7 @@ echo "==> Done. Note: NetworkManager was not restarted; the powersave setting"
 echo "    will take effect on next NetworkManager restart or reboot."
 
 # -----------------------------------------------------------------------------
-# 4) Install monitrc into /etc/monit/
+# 3) Install monitrc into /etc/monit/
 # -----------------------------------------------------------------------------
 echo "==> Installing monitrc..."
 

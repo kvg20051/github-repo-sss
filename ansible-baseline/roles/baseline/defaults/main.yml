@@ -34,7 +34,6 @@ baseline_ssh_max_auth_tries: 3
 # --- UFW ---
 baseline_ssh_allowed: []
 baseline_ufw_rules: []
-baseline_ufw_route_rules: []
 baseline_ufw_enable: true
 
 # --- fail2ban ---
@@ -47,9 +46,6 @@ baseline_fail2ban_ignoreip: "{{ ['127.0.0.1/8', '::1'] + baseline_ssh_allowed }}
 # --- unattended-upgrades ---
 baseline_unattended_blacklist: []
 baseline_unattended_auto_reboot: false
-
-# --- sysctl ---
-baseline_ip_forward: false
 
 # --- journald ---
 baseline_journald_max_use: 500M

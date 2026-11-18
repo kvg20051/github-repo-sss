@@ -11,12 +11,11 @@
 - Коллекции community.general и ansible.posix.
 - Существующий доступ по ключу под ansible_user и sudo для запуска роли.
 - Проверенный ключ сервера в known_hosts управляющего пользователя.
-- Для git.wax.su интерфейс wg8 должен существовать до запуска роли.
 - Указанные проверки не заменяют интеграционный прогон на вашей версии Ubuntu.
 
 ## Запуск роли
 
-На управляющем узле, из каталога ansible-baseline:
+На управляющем узле `mail`, из каталога `ansible-baseline`:
 
     ansible-galaxy collection install community.general ansible.posix
     ansible-playbook baseline.yml --syntax-check

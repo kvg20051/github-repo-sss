@@ -84,7 +84,6 @@ Modify these variables according to your needs before running the script.
 - xfsprogs: XFS filesystem tools
 
 ### Security/Network
-- wireguard-tools: Modern VPN tools
 - openssh-server: SSH server
 
 ### Misc Utilities

@@ -1,5 +1,5 @@
 - name: Immediate reboot
-  hosts: all:!hub.wax.su
+  hosts: all:!mail
   become: true
   gather_facts: false
   tasks:

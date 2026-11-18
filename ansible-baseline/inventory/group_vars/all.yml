@@ -4,7 +4,7 @@
 baseline_timezone: Europe/Moscow
 
 # Администраторы: создаются на всех хостах, получают sudo и SSH-ключи.
-# Ключи берутся с управляющей машины (hub). Добавьте свои при необходимости.
+# Ключи берутся с управляющей машины (mail). Добавьте свои при необходимости.
 baseline_admins:
   - name: kvg
     shell: /bin/bash
@@ -38,7 +38,6 @@ baseline_ssh_allowed:
 # Дополнительные правила ufw для конкретного хоста задаются в host_vars:
 # baseline_ufw_rules:
 #   - { port: "443", proto: tcp }
-#   - { port: "1443", proto: udp }
 baseline_ufw_rules: []
 
 # Пакеты, которые автообновления НЕ трогают (обновляются вручную)
