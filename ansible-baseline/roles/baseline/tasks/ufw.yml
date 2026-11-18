@@ -20,6 +20,14 @@
         insert: 1
       loop: "{{ baseline_ssh_allowed }}"
 
+    - name: Allow incoming HTTPS on every baseline host
+      community.general.ufw:
+        rule: allow
+        direction: in
+        port: "443"
+        proto: tcp
+        src: any
+
     - name: Host-specific rules
       community.general.ufw:
         rule: "{{ item.rule | default('allow') }}"

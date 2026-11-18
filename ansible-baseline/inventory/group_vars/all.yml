@@ -38,7 +38,7 @@ baseline_ssh_allowed:
 
 # Дополнительные правила ufw для конкретного хоста задаются в host_vars:
 # baseline_ufw_rules:
-#   - { port: "443", proto: tcp }
+#   - { port: "80", proto: tcp }
 baseline_ufw_rules: []
 
 # Пакеты, которые автообновления НЕ трогают (обновляются вручную)
