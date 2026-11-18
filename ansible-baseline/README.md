@@ -130,7 +130,7 @@ Ansible на mail**, а затем добавляется на целевые с
 
 | Параметр | Значение |
 | --- | --- |
-| `StrictHostKeyChecking` | `ask` |
+| `StrictHostKeyChecking` | `no` |
 | `UserKnownHostsFile` | `~/.ssh/known_hosts` |
 | `IdentitiesOnly`, `HashKnownHosts` | `yes` |
 | `ForwardAgent`, `ForwardX11` | `no` |
