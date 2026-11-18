@@ -1,32 +1,44 @@
 ---
-# Сначала разрешаем трафик от доверенных адресов, затем включаем ufw.
-- name: Allow all incoming traffic from trusted addresses
-  community.general.ufw:
-    rule: allow
-    direction: in
-    src: "{{ item }}"
-    insert: 1
-  loop: "{{ baseline_ssh_allowed }}"
+- name: Explain deferred UFW configuration check
+  ansible.builtin.debug:
+    msg: >-
+      UFW is not installed. Check mode only simulates package installation,
+      so configuration and service checks are deferred until the package is installed.
+  when:
+    - ansible_check_mode
+    - "'ufw' not in ansible_facts['packages']"
 
-- name: Host-specific rules
-  community.general.ufw:
-    rule: "{{ item.rule | default('allow') }}"
-    port: "{{ item.port | string }}"
-    proto: "{{ item.proto | default('tcp') }}"
-    src: "{{ item.src | default('any') }}"
-  loop: "{{ baseline_ufw_rules }}"
-  loop_control:
-    label: "{{ item.port }}/{{ item.proto | default('tcp') }} from {{ item.src | default('any') }}"
+- name: Configure UFW when prerequisites are available
+  when: not ansible_check_mode or 'ufw' in ansible_facts['packages']
+  block:
+    # Сначала разрешаем трафик от доверенных адресов, затем включаем ufw.
+    - name: Allow all incoming traffic from trusted addresses
+      community.general.ufw:
+        rule: allow
+        direction: in
+        src: "{{ item }}"
+        insert: 1
+      loop: "{{ baseline_ssh_allowed }}"
 
-- name: Default policies
-  community.general.ufw:
-    direction: "{{ item.direction }}"
-    policy: "{{ item.policy }}"
-  loop:
-    - { direction: incoming, policy: deny }
-    - { direction: outgoing, policy: allow }
+    - name: Host-specific rules
+      community.general.ufw:
+        rule: "{{ item.rule | default('allow') }}"
+        port: "{{ item.port | string }}"
+        proto: "{{ item.proto | default('tcp') }}"
+        src: "{{ item.src | default('any') }}"
+      loop: "{{ baseline_ufw_rules }}"
+      loop_control:
+        label: "{{ item.port }}/{{ item.proto | default('tcp') }} from {{ item.src | default('any') }}"
 
-- name: Enable ufw
-  community.general.ufw:
-    state: enabled
-  when: baseline_ufw_enable
+    - name: Default policies
+      community.general.ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: incoming, policy: deny }
+        - { direction: outgoing, policy: allow }
+
+    - name: Enable ufw
+      community.general.ufw:
+        state: enabled
+      when: baseline_ufw_enable
