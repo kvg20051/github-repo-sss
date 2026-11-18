@@ -24,6 +24,9 @@ baseline_packages:
   - apt-transport-https
 
 baseline_admins: []
+baseline_user_generate_ssh_key: true
+baseline_user_configure_ssh_client: true
+baseline_user_configure_bash: true
 
 # --- SSH ---
 baseline_ssh_port: 22

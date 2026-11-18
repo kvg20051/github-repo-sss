@@ -2,4 +2,3 @@
 # GitLab на git.wax.su
 baseline_ufw_rules:
   - { port: "80", proto: tcp }
-  - { port: "443", proto: tcp }

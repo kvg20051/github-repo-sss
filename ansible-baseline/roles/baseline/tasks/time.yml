@@ -3,8 +3,18 @@
   community.general.timezone:
     name: "{{ baseline_timezone }}"
 
+- name: Explain deferred Chrony service check
+  ansible.builtin.debug:
+    msg: >-
+      Chrony is not installed. Check mode only simulates package installation,
+      so the service check is deferred until the package is installed.
+  when:
+    - ansible_check_mode
+    - "'chrony' not in ansible_facts['packages']"
+
 - name: Chrony enabled and running
   ansible.builtin.service:
     name: chrony
     state: started
     enabled: true
+  when: not ansible_check_mode or 'chrony' in ansible_facts['packages']

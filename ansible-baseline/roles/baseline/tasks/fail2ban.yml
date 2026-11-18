@@ -1,13 +1,25 @@
 ---
-- name: fail2ban sshd jail
-  ansible.builtin.template:
-    src: fail2ban-sshd.local.j2
-    dest: /etc/fail2ban/jail.d/sshd.local
-    mode: "0644"
-  notify: Restart fail2ban
+- name: Explain deferred fail2ban configuration check
+  ansible.builtin.debug:
+    msg: >-
+      fail2ban is not installed. Check mode only simulates package installation,
+      so configuration and service checks are deferred until the package is installed.
+  when:
+    - ansible_check_mode
+    - "'fail2ban' not in ansible_facts['packages']"
 
-- name: fail2ban enabled and running
-  ansible.builtin.service:
-    name: fail2ban
-    state: started
-    enabled: true
+- name: Configure fail2ban when prerequisites are available
+  when: not ansible_check_mode or 'fail2ban' in ansible_facts['packages']
+  block:
+    - name: fail2ban sshd jail
+      ansible.builtin.template:
+        src: fail2ban-sshd.local.j2
+        dest: /etc/fail2ban/jail.d/sshd.local
+        mode: "0644"
+      notify: Restart fail2ban
+
+    - name: fail2ban enabled and running
+      ansible.builtin.service:
+        name: fail2ban
+        state: started
+        enabled: true
