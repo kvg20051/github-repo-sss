@@ -18,6 +18,20 @@
   loop_control:
     label: "{{ item.port }}/{{ item.proto | default('tcp') }} from {{ item.src | default('any') }}"
 
+- name: Allow explicitly configured forwarded traffic
+  community.general.ufw:
+    rule: allow
+    route: true
+    interface_in: "{{ item.interface_in }}"
+    interface_out: "{{ item.interface_out | default(omit) }}"
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    proto: "{{ item.proto | default(omit) }}"
+    port: "{{ item.port | default(omit) }}"
+  loop: "{{ baseline_ufw_route_rules }}"
+  loop_control:
+    label: "{{ item.interface_in }}: {{ item.src }} -> {{ item.dest }}"
+
 - name: Default policies
   community.general.ufw:
     direction: "{{ item.direction }}"

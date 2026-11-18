@@ -1,4 +1,8 @@
 ---
+- name: Validate routing before changing the host
+  ansible.builtin.import_tasks: ufw_preflight.yml
+  tags: [ufw]
+
 - name: Packages
   ansible.builtin.import_tasks: packages.yml
   tags: [packages]

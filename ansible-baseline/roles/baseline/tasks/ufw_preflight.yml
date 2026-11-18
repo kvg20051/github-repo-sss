@@ -1,0 +1,33 @@
+---
+- name: Require explicit forwarding rules on managed gateways
+  ansible.builtin.assert:
+    that:
+      - baseline_ufw_route_rules | length > 0
+    fail_msg: Define baseline_ufw_route_rules before enabling UFW on a gateway.
+  when:
+    - baseline_ufw_enable | bool
+    - baseline_ip_forward | bool
+
+- name: Validate forwarding rule fields
+  ansible.builtin.assert:
+    that:
+      - item.interface_in | default('') | length > 0
+      - item.src | default('') | length > 0
+      - item.dest | default('') | length > 0
+    fail_msg: Every forwarded rule requires interface_in, src and dest.
+  loop: "{{ baseline_ufw_route_rules }}"
+
+- name: Check that configured forwarding interfaces exist
+  ansible.builtin.command:
+    argv:
+      - ip
+      - link
+      - show
+      - dev
+      - "{{ item }}"
+  loop: >-
+    {{ (baseline_ufw_route_rules | map(attribute='interface_in') | list +
+        baseline_ufw_route_rules | selectattr('interface_out', 'defined') |
+        map(attribute='interface_out') | list) | unique }}
+  check_mode: false
+  changed_when: false

@@ -1,38 +1,147 @@
 # Baseline для серверов wax.su
 
-Единая базовая настройка всех хостов: пакеты, время, админы и SSH-ключи,
-sudo, жёсткий sshd, ufw, fail2ban, автообновления безопасности, sysctl, journald.
+Роль настраивает пакеты, время, администраторов, SSH, UFW, fail2ban,
+автообновления безопасности, sysctl и journald.
 
-## Структура
-```
-ansible.cfg
-baseline.yml                    # плейбук
-inventory/
-  hosts.ini                     # хосты и группы
-  group_vars/all.yml            # общие настройки (список IP для SSH и т.д.)
-  host_vars/git.wax.su.yml      # правила конкретного хоста
-roles/baseline/                 # сама роль
-```
+Исправления подготовлены относительно коммита
+3a1eba38f8b55ec5c6a7a881fd5338763d434f90. Настройки применяются к серверам запуском Ansible по инструкции ниже.
 
-## Первый запуск
-```bash
-ansible-galaxy collection install community.general ansible.posix   # если ещё нет
-ansible all -m ping
-ansible-playbook baseline.yml --check --diff          # посмотреть, что изменится
-ansible-playbook baseline.yml --limit stage.wax.su    # сначала на одном хосте
-ansible-playbook baseline.yml                         # потом на всех
-```
+## Требования
 
-Только часть роли:
-```bash
-ansible-playbook baseline.yml --tags ufw
-ansible-playbook baseline.yml --tags ssh,fail2ban
-```
+- Управляющий узел Linux с Python 3 и Ansible; код проверен статически с
+  синтаксисом ansible-core 2.19.
+- Целевые хосты Ubuntu с systemd, OpenSSH и Python 3.
+- Коллекции community.general и ansible.posix.
+- Существующий доступ по ключу под ansible_user и sudo для запуска роли.
+- Проверенный ключ сервера в known_hosts управляющего пользователя.
+- Для git.wax.su интерфейс wg8 должен существовать до запуска роли.
+- Указанные проверки не заменяют интеграционный прогон на вашей версии Ubuntu.
 
-## Что важно
-- Перед отключением входа по паролю роль проверяет, что у пользователя есть
-  `authorized_keys`, иначе останавливается.
-- ufw: сначала добавляются разрешения SSH, потом включается файрвол.
-  Существующие правила не удаляются — роль только добавляет.
-- Пакеты из `baseline_unattended_blacklist` (gitlab, ansible) автообновлениями не трогаются.
-- Добавить IP для SSH на все хосты: допишите в `baseline_ssh_allowed` и запустите `--tags ufw`.
+## Запуск роли
+
+На управляющем узле, из каталога ansible-baseline:
+
+    ansible-galaxy collection install community.general ansible.posix
+    ansible-playbook baseline.yml --syntax-check
+    ansible-playbook baseline.yml --limit stage.wax.su --check --diff
+    ansible-playbook baseline.yml --limit stage.wax.su --diff
+
+После проверки результата применяйте роль к остальным хостам по одному:
+
+    ansible-playbook baseline.yml --limit git.wax.su --check --diff
+    ansible-playbook baseline.yml --limit git.wax.su --diff
+
+Доступны теги packages,time,users,ssh,ufw,fail2ban,unattended,system.
+Для применения только исправлений после первоначальной настройки:
+
+    ansible-playbook baseline.yml --limit stage.wax.su --tags users,ssh,ufw,unattended,system --diff
+
+Первичная установка пакетов и создание пользователей не симулируют будущую
+систему полностью в --check: на новом сервере проверка ключевого доступа
+может остановиться до реального создания администратора. Сначала настройте
+доступ администратора отдельным bootstrap-процессом.
+
+Если sudo требует пароль, добавьте --ask-become-pass. При отключении
+sudo_nopasswd у пользователя, которым запускается Ansible, заранее обеспечьте
+ему рабочий пароль sudo или используйте другого администратора.
+
+## Исправления 1 и 4: SSH
+
+Перед изменениями выполняется настоящий независимый SSH-вход с управляющего
+узла по публичному ключу: без ControlMaster, интерактивного пароля или
+keyboard-interactive. Проверка работает также для hub.wax.su с local connection.
+ansible_user должен быть задан явно. Переход с root на администратора выполните
+до этой роли; смена порта этой процедурой запрещена.
+
+Проверка использует ansible_host, ansible_port/ansible_ssh_port,
+ansible_private_key_file/ansible_ssh_private_key_file,
+ansible_ssh_common_args, ansible_ssh_extra_args, ansible_ssh_executable
+и обычный ~/.ssh/config. Специальные параметры транспорта из глобального
+ansible.cfg при необходимости перенесите в ansible_ssh_common_args.
+SSH-агент и нужные ключи должны быть доступны тому, кто запускает Ansible.
+
+Шаблон сначала создаётся в приватном временном каталоге. validate_sshd.py
+строит копию дерева Include с кандидатом на месте 10-baseline.conf,
+проверяет её через sshd -t и проверяет глобальные параметры через sshd -T.
+Порядок включаемых файлов сохраняется. Если основной конфиг не подключает
+drop-in, выполнение останавливается.
+
+После установки повторно проверяется полный конфиг, выполняется reload и
+проверяется новый независимый вход. Ошибки блока установки/проверки вызывают
+восстановление предыдущего drop-in и reload. Резервный файл сохраняется на хосте.
+Откат требует доступного текущего Ansible-соединения; это не автономный
+аварийный таймер и не защита от отключения сервера или потери всей сети.
+
+В --check рабочие конфиги и службы не меняются, но выполняются реальные
+проверочные SSH-входы и временная подготовка файлов с последующей очисткой.
+
+## Исправление 2: WireGuard wg8
+
+git.wax.su получает routed allow для трафика, входящего через wg8,
+с любым источником и назначением. Глобальная политика FORWARD не открывается.
+Исходные входящие правила 80/tcp, 443/tcp и 1443/udp сохраняются.
+
+Для выхода IPv4-клиентов в интернет требуется обратная маршрутизация либо
+маскарадинг. Если подходящий NAT уже настроен через wg-quick или другой механизм,
+дополнительный NAT-скрипт не нужен.
+
+Если NAT отсутствует, скопируйте scripts/configure-wg8-nat.py на шлюз и выполните:
+
+    sudo python3 configure-wg8-nat.py --interface wg8
+    sudo python3 configure-wg8-nat.py --interface wg8 --apply
+
+Первый вызов показывает diff и проверяет iptables-restore --test --noflush,
+второй сохраняет резервную копию before.rules, применяет изменения и reload UFW.
+При ошибке reload скрипт восстанавливает файл и повторяет reload.
+UFW должен быть включён ролью; не запускайте два изменения UFW одновременно.
+
+По умолчанию IPv4-подсети берутся из адресов wg8. Проверьте показанные подсети:
+адрес интерфейса /32 не описывает сеть клиентов, и скрипт потребует --source.
+Для подсетей за пирами задайте каждую явно через повторяемый --source CIDR.
+Скрипт настраивает только IPv4; IPv6-маршрутизация/NAT не добавляются.
+Существующая таблица NAT сохраняется, управляемый блок обновляется без дубликатов.
+Сложный before.rules с несколькими таблицами *nat требует ручного согласования.
+
+## Исправление 3: sudo
+
+sudo_nopasswd: false или отсутствие этого поля удаляет только управляемый файл
+/etc/sudoers.d/90-<имя>. Затем проверяется полный sudoers через visudo -c.
+Другие файлы, например cloud-init NOPASSWD, не удаляются: проверьте sudo -l,
+если беспарольный sudo остаётся.
+
+## Исправление 5: автообновления
+
+Перед заданием security-only списка очищаются Allowed-Origins и Origins-Pattern.
+После записи проверяется итоговый apt-config dump; более поздний конфиг,
+расширяющий список источников, вызывает ошибку. Такой конфликт нужно устранить
+в соответствующем файле, а затем повторить запуск.
+
+    sudo apt-config dump
+    sudo unattended-upgrade --dry-run --debug
+
+ESM-источники работают только при наличии соответствующей подписки/настройки.
+Blacklist сохраняет прежний смысл: исключения для unattended-upgrades,
+не запрет ручного apt upgrade.
+
+## Исправление 6: redirects
+
+Для IPv4 send_redirects добавлены all, default и glob для существующих
+интерфейсов. Для IPv4/IPv6 accept_redirects добавлены glob-правила.
+Обработчик вызывает systemd-sysctl для управляемого файла; glob-правила
+также применяются systemd при появлении новых интерфейсов.
+
+    sysctl net.ipv4.conf.all.send_redirects
+    sysctl net.ipv4.conf.default.send_redirects
+    sysctl net.ipv4.conf.wg8.send_redirects
+    sysctl net.ipv4.conf.wg8.accept_redirects
+
+## Исправление 7: вывод Ansible
+
+В [defaults] установлен callback_result_format = yaml.
+
+## Сохранённые ограничения исходной роли
+
+Ключи администраторов добавляются без автоматического отзыва старых.
+UFW-правила добавляются без удаления прежних; false в baseline_ufw_enable
+пропускает включение, но не выключает уже работающий firewall.
+Эти два изменения не входили в запрошенные пункты 1–7.
