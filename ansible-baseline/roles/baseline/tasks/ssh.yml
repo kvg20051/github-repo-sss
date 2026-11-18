@@ -1,0 +1,32 @@
+---
+# Защита от блокировки: пароль отключаем, только если у connect-пользователя есть ключ
+- name: Check that the connecting user has authorized_keys
+  ansible.builtin.stat:
+    path: "~{{ ansible_user | default(lookup('env', 'USER')) }}/.ssh/authorized_keys"
+  register: connect_user_keys
+  when: ansible_connection != 'local'
+
+- name: Refuse to disable password auth without keys
+  ansible.builtin.assert:
+    that:
+      - connect_user_keys.stat.exists
+      - connect_user_keys.stat.size > 0
+    fail_msg: >-
+      У пользователя {{ ansible_user }} нет authorized_keys на {{ inventory_hostname }}.
+      Отключение входа по паролю заблокирует доступ — остановлено.
+  when:
+    - ansible_connection != 'local'
+    - baseline_ssh_password_auth == 'no'
+
+- name: SSH hardening drop-in
+  ansible.builtin.template:
+    src: sshd_baseline.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-baseline.conf
+    mode: "0644"
+  register: sshd_dropin
+  notify: Reload ssh
+
+- name: Validate full sshd config
+  ansible.builtin.command: /usr/sbin/sshd -t
+  changed_when: false
+  when: sshd_dropin is changed

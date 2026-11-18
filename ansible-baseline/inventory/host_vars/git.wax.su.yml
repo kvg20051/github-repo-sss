@@ -1,0 +1,9 @@
+---
+# GitLab + WireGuard на git.wax.su
+baseline_ufw_rules:
+  - { port: "80", proto: tcp }
+  - { port: "443", proto: tcp }
+  - { port: "1443", proto: udp }
+
+# Хост маршрутизирует трафик WireGuard — форвардинг нужен
+baseline_ip_forward: true

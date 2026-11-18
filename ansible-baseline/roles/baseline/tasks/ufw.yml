@@ -1,0 +1,32 @@
+---
+# Сначала разрешаем SSH, и только потом включаем ufw — чтобы не потерять доступ.
+- name: Allow SSH from trusted addresses
+  community.general.ufw:
+    rule: allow
+    port: "{{ baseline_ssh_port | string }}"
+    proto: tcp
+    src: "{{ item }}"
+  loop: "{{ baseline_ssh_allowed }}"
+
+- name: Host-specific rules
+  community.general.ufw:
+    rule: "{{ item.rule | default('allow') }}"
+    port: "{{ item.port | string }}"
+    proto: "{{ item.proto | default('tcp') }}"
+    src: "{{ item.src | default('any') }}"
+  loop: "{{ baseline_ufw_rules }}"
+  loop_control:
+    label: "{{ item.port }}/{{ item.proto | default('tcp') }} from {{ item.src | default('any') }}"
+
+- name: Default policies
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
+  when: baseline_ufw_enable

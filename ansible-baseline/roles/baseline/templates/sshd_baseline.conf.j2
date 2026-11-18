@@ -1,0 +1,12 @@
+# Managed by Ansible (role: baseline). Do not edit by hand.
+Port {{ baseline_ssh_port }}
+PermitRootLogin {{ baseline_ssh_permit_root_login }}
+PasswordAuthentication {{ baseline_ssh_password_auth }}
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+PermitEmptyPasswords no
+MaxAuthTries {{ baseline_ssh_max_auth_tries }}
+LoginGraceTime 30
+X11Forwarding no
+ClientAliveInterval 300
+ClientAliveCountMax 2

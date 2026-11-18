@@ -1,0 +1,15 @@
+---
+- name: Unattended-upgrades config (security only)
+  ansible.builtin.template:
+    src: 52-baseline-unattended.j2
+    dest: /etc/apt/apt.conf.d/52baseline-unattended
+    mode: "0644"
+
+- name: Enable periodic apt runs
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";

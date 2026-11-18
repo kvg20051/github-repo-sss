@@ -1,0 +1,22 @@
+---
+- name: sysctl hardening
+  ansible.builtin.template:
+    src: 90-baseline-sysctl.conf.j2
+    dest: /etc/sysctl.d/90-baseline.conf
+    mode: "0644"
+  notify: Apply sysctl
+
+- name: Ensure journald drop-in dir exists
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    mode: "0755"
+
+- name: journald size limit
+  ansible.builtin.copy:
+    dest: /etc/systemd/journald.conf.d/10-baseline.conf
+    mode: "0644"
+    content: |
+      [Journal]
+      SystemMaxUse={{ baseline_journald_max_use }}
+  notify: Restart journald

@@ -1,0 +1,32 @@
+---
+- name: Packages
+  ansible.builtin.import_tasks: packages.yml
+  tags: [packages]
+
+- name: Time
+  ansible.builtin.import_tasks: time.yml
+  tags: [time]
+
+- name: Users and sudo
+  ansible.builtin.import_tasks: users.yml
+  tags: [users]
+
+- name: SSH hardening
+  ansible.builtin.import_tasks: ssh.yml
+  tags: [ssh]
+
+- name: Firewall
+  ansible.builtin.import_tasks: ufw.yml
+  tags: [ufw]
+
+- name: fail2ban
+  ansible.builtin.import_tasks: fail2ban.yml
+  tags: [fail2ban]
+
+- name: Automatic security updates
+  ansible.builtin.import_tasks: unattended.yml
+  tags: [unattended]
+
+- name: Kernel and journald
+  ansible.builtin.import_tasks: system.yml
+  tags: [system]

@@ -1,0 +1,7 @@
+ansible-playbook -i .ansible/inventory.ini .ansible/reboot_hosts.yml
+
+ansible-playbook ~/.ansible/reboot_now.yml                       # all hosts at once
+ansible-playbook ~/.ansible/reboot_now.yml --limit prod.wax.su   # one host
+
+ansible all:!hub.wax.su -b -m ansible.builtin.reboot
+ansible prod.wax.su -b -m ansible.builtin.reboot

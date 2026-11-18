@@ -1,0 +1,12 @@
+# Managed by Ansible (role: baseline)
+[DEFAULT]
+ignoreip = {{ baseline_fail2ban_ignoreip | join(' ') }}
+bantime  = {{ baseline_fail2ban_bantime }}
+findtime = {{ baseline_fail2ban_findtime }}
+maxretry = {{ baseline_fail2ban_maxretry }}
+banaction = ufw
+
+[sshd]
+enabled = true
+port    = {{ baseline_ssh_port }}
+backend = systemd
