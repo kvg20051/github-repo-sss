@@ -65,6 +65,33 @@
       check_mode: false
       changed_when: false
 
+    - name: Record the previous drop-in state
+      ansible.builtin.stat:
+        path: /etc/ssh/sshd_config.d/10-baseline.conf
+        follow: false
+        get_checksum: false
+        get_mime: false
+      register: baseline_ssh_previous
+
+    - name: Require a regular file or an absent drop-in
+      ansible.builtin.assert:
+        that:
+          - not baseline_ssh_previous.stat.exists or (baseline_ssh_previous.stat.isreg | default(false))
+        fail_msg: The managed SSH drop-in must be a regular file, not a symlink or directory.
+
+    - name: Preserve previous contents independently of copy change detection
+      ansible.builtin.copy:
+        src: /etc/ssh/sshd_config.d/10-baseline.conf
+        remote_src: true
+        dest: "{{ baseline_ssh_stage.path }}/previous.conf"
+        owner: root
+        group: root
+        mode: "0600"
+      when: baseline_ssh_previous.stat.exists
+      check_mode: false
+      changed_when: false
+      diff: false
+
     - name: Install and verify the SSH configuration with rollback
       block:
         - name: Install the validated drop-in and preserve its previous version
@@ -98,15 +125,15 @@
       rescue:
         - name: Restore the previous baseline drop-in
           ansible.builtin.copy:
-            src: "{{ baseline_ssh_install.backup_file }}"
+            src: "{{ baseline_ssh_stage.path }}/previous.conf"
             remote_src: true
             dest: /etc/ssh/sshd_config.d/10-baseline.conf
-            owner: root
-            group: root
-            mode: "0644"
+            owner: "{{ baseline_ssh_previous.stat.uid }}"
+            group: "{{ baseline_ssh_previous.stat.gid }}"
+            mode: "{{ baseline_ssh_previous.stat.mode }}"
           when:
             - not ansible_check_mode
-            - baseline_ssh_install.backup_file is defined
+            - baseline_ssh_previous.stat.exists
 
         - name: Remove a newly created baseline drop-in after failure
           ansible.builtin.file:
@@ -114,8 +141,7 @@
             state: absent
           when:
             - not ansible_check_mode
-            - baseline_ssh_install is changed
-            - baseline_ssh_install.backup_file is not defined
+            - not baseline_ssh_previous.stat.exists
 
         - name: Validate the restored configuration
           ansible.builtin.command: /usr/sbin/sshd -t
